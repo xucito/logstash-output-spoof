@@ -65,7 +65,8 @@ public class Spoof implements Output {
 																              }
 	              catch(Exception e)
 			             {
-					                    System.out.println(e);
+					     e.printStackTrace();         
+					     //      System.out.println(e);
 							           }
 	    
 	    Iterator<Event> z = events.iterator();

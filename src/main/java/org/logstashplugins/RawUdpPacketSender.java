@@ -17,6 +17,11 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.List;
+import java.util.Random;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 
 public class RawUdpPacketSender {
     private static Logger logger = Logger.getLogger(RawUdpPacketSender.class.getName());
@@ -51,7 +56,9 @@ public class RawUdpPacketSender {
         if (device == null) {
             return null;
         }
-        sourceMacAddress = device.getHardwareAddress();  //Use device's MAC address as the source address
+        
+	//bugged 
+	sourceMacAddress = getMACAddress();//device.getHardwareAddress();  //Use device's MAC address as the source address
         StringBuilder errorBuffer = new StringBuilder();
         int snapLen = 64 * 1024;
         int flags = Pcap.MODE_NON_PROMISCUOUS;
@@ -62,6 +69,29 @@ public class RawUdpPacketSender {
             logger.info(String.format("Pcap starts for device %s successfully.", device));
         }
         return pcap;
+    }
+
+    private byte[] getMACAddress(){
+    try{
+	    InetAddress ip = InetAddress.getLocalHost();
+		System.out.println("Current IP address : " + ip.getHostAddress());
+		
+		//NetworkInterface network = NetworkInterface.getByIndex(0);//NetworkInterface.getByInetAddress(ip);	
+
+		Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+		for (type var : array) 
+                { 
+                     var.getName();
+                }
+		byte[] mac = interfaces[0].getHardwareAddress();
+
+    return mac;
+     }
+    catch(Exception e)
+    {
+	    e.printStackTrace();
+	    return null;
+    }
     }
 
     private PcapIf getPcapDevice() {

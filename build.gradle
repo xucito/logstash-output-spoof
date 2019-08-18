@@ -52,7 +52,8 @@ repositories {
   //}
  maven {
    url = 'https://clojars.org/repo'  
-  }
+   // url = 'http://maven.top-q.co.il/content/repositories/releases/'  
+}
 }
 
 //repositories {
@@ -66,8 +67,9 @@ dependencies {
     compile fileTree(dir: LOGSTASH_CORE_PATH, include: "**/logstash-core-?.?.?.jar")
    // compile 'com.savarese.rocksaw.net:rocksaw-1.1.0-jar-with-dependencies'
     //compile 'jnetpcap:jnetpcap:1.4.r1425-1g'
-    compile group: 'jnetpcap', name: 'jnetpcap', version: '1.4.r1425-1g', include "**/jnetpcap-*.jar"
-    compile group: 'jpcap', name: 'jpcap', version: '0.1.18-001', include "**/jpcap*.jar"
+    compile group: 'jnetpcap', name: 'jnetpcap', version: '1.4.r1425-1g'
+    //compile group: 'jpcap', name: 'jpcap', version: '0.1.18-001'
+   // compile group: 'org.apache', name: 'jNetPcap', version: '1.4.b0004-1'
     testCompile 'junit:junit:4.12'
     testCompile 'org.jruby:jruby-complete:9.1.13.0'
     testCompile 'org.apache.logging.log4j:log4j-core:2.9.1'
