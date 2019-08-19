@@ -28,27 +28,32 @@ public class RawUdpPacketSender {
 
     private Pcap pcap = null;
     private int headerLength = getHeaderLength();
-    private int UDP_SOURCE_PORT = 7006;
+    private int UDP_SOURCE_PORT = 44226;//7006;
     private byte[] sourceMacAddress;
-    private byte[] destinationMacAddress;
+    //private byte[] destinationMacAddress;
 
     public RawUdpPacketSender() {
-        String macAddress = System.getProperty("gateway_mac_address", "");
+      //  String macAddress = System.getProperty("gateway_mac_address", "");
         //Destination MAC address needs to be configured. This can be retrieved using ARP, but it's not easy
-        destinationMacAddress = hexStringToByteArray(macAddress);
+       // destinationMacAddress = getMacAddressBytes("00:50:56:01:36:89");//hexStringToByteArray("00:50:56:01:36:89");//macAddress);
         try {
             pcap = createPcap();
+	    if(pcap == null)
+	    {
+		System.out.println("Failed to start PCAP");
+	    }
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Failed to start pcap library.", e);
         }
     }
 
-    public void sendPacket(URI destination, byte[] packet)
+    public void sendPacket(URI source,URI destination, byte[] packet, String destinationMacAddress)
             throws IOException {
         int port = destination.getPort();
         InetAddress address = InetAddress.getByName(destination.getHost());
         byte[] destinationAddress = address.getAddress();
-        sendPacket(destinationAddress, port, packet);
+        InetAddress sourceAddress = InetAddress.getByName(source.getHost());
+        sendPacket(sourceAddress.getAddress(),destinationAddress, port, packet, getMacAddressBytes(destinationMacAddress));
     }
 
     private Pcap createPcap() throws IOException {
@@ -67,31 +72,86 @@ public class RawUdpPacketSender {
                 errorBuffer);
         if (logger.isLoggable(Level.INFO)) {
             logger.info(String.format("Pcap starts for device %s successfully.", device));
-        }
+	 }
         return pcap;
     }
 
     private byte[] getMACAddress(){
-    try{
-	    InetAddress ip = InetAddress.getLocalHost();
-		System.out.println("Current IP address : " + ip.getHostAddress());
+    //try{
+	//    InetAddress ip = InetAddress.getLocalHost();
+	//	System.out.println("Current IP address : " + ip.getHostAddress());
 		
-		//NetworkInterface network = NetworkInterface.getByIndex(0);//NetworkInterface.getByInetAddress(ip);	
+	//	NetworkInterface network = NetworkInterface.getByIndex(0);//NetworkInterface.getByInetAddress(ip);	
 
-		Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-		for (type var : array) 
-                { 
-                     var.getName();
-                }
-		byte[] mac = interfaces[0].getHardwareAddress();
+		//Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+		//for (type var : array) 
+                //{ 
+                //     var.getName();
+                //}
+	        
+	//	if(network == null)
+	//	{
+	//	System.out.println("NO Network found");
+	//	}
+		//	byte[] mac = hexStringToByteArray("f3:6a:0b:dd:70:32"); //network.getHardwareAddress();
 
-    return mac;
+    //return mac;
+     String macAddress = "00:50:56:01:63:03";//randomMACAddress();//"AA:BB:CC:DD:EE:FF";
+     return getMacAddressBytes(macAddress);
+    // String[] macAddressParts = macAddress.split(":");
+
+// convert hex string to byte values
+//byte[] macAddressBytes = new byte[6];
+//for(int i=0; i<6; i++){
+//    Integer hex = Integer.parseInt(macAddressParts[i], 16);
+//    macAddressBytes[i] = hex.byteValue();
+//} 
+//return macAddressBytes;
+//     }
+//    catch(Exception e)
+ //   {
+//	    e.printStackTrace();
+//	    return null;
+ //`   }
+    }
+    
+    //address in xx:xx:xx:xx:xx format
+    private byte[] getMacAddressBytes(String macAddress)
+    {
+	 try {
+	  String[] macAddressParts = macAddress.split(":");
+byte[] macAddressBytes = new byte[6];
+for(int i=0; i<6; i++){
+    Integer hex = Integer.parseInt(macAddressParts[i], 16);
+    macAddressBytes[i] = hex.byteValue();
+}
+return macAddressBytes;
      }
     catch(Exception e)
     {
-	    e.printStackTrace();
-	    return null;
+            e.printStackTrace();
+            return null;
     }
+    }
+
+    private String randomMACAddress(){
+    Random rand = new Random();
+    byte[] macAddr = new byte[6];
+    rand.nextBytes(macAddr);
+
+    macAddr[0] = (byte)(macAddr[0] & (byte)254);  //zeroing last 2 bytes to make it unicast and locally adminstrated
+
+    StringBuilder sb = new StringBuilder(18);
+    for(byte b : macAddr){
+
+        if(sb.length() > 0)
+            sb.append(":");
+
+        sb.append(String.format("%02x", b));
+    }
+
+
+    return sb.toString();
     }
 
     private PcapIf getPcapDevice() {
@@ -103,20 +163,30 @@ public class RawUdpPacketSender {
                     errorBuffer.toString()));
             return null;
         }
-        String deviceName = System.getProperty("raw_packet_network_interface", "eth0");
-        for (PcapIf device : allDevs) {
+        String deviceName = System.getProperty("raw_packet_network_interface", "eth32");
+        
+	//Delete later
+	 for (PcapIf device : allDevs) {
+	    System.out.println(device.getName());
+        }
+
+	
+	
+	for (PcapIf device : allDevs) {
             if (deviceName.equals(device.getName())) {
-                return device;
+                 System.out.println("Selected " + device.getName());
+	         return device;
             }
         }
-        return allDevs.get(0);
+	System.out.println("Selected default device " + allDevs.get(4).getName());
+        return allDevs.get(4);
     }
 
     private int getHeaderLength() {
         return 14 + 20 + 8; //Ethernet header + IP v4 header + UDP header
     }
 
-    private void sendPacket(byte[] destinationAddress, int port, byte[] data)
+    private void sendPacket(byte[] spoofedSourceAddress,byte[] destinationAddress, int port, byte[] data, byte[] destinationMacAddress)
             throws IOException {
         int dataLength = data.length;
         int packetSize = headerLength + dataLength;
@@ -135,11 +205,12 @@ public class RawUdpPacketSender {
         Ip4 ip4 = packet.getHeader(new Ip4());
         ip4.type(Ip4.Ip4Type.UDP);
         ip4.length(packetSize - ethernet.size());
-        byte[] sourceAddress = InetAddress.getLocalHost().getAddress();
+        byte[] sourceAddress = spoofedSourceAddress;//InetAddress.getLocalHost().getAddress();
         ip4.source(sourceAddress);
         ip4.destination(destinationAddress);
-        ip4.ttl(32);
-        ip4.flags(0);
+        ip4.ttl(64);
+        ip4.flags(2); //Sets to DF so that it does not fragment message
+	//ip4.flags(0);
         ip4.offset(0);
         ip4.checksum(ip4.calculateChecksum());
 
@@ -150,13 +221,17 @@ public class RawUdpPacketSender {
         udp.destination(port);
         udp.length(packetSize - ethernet.size() - ip4.size());
         udp.checksum(udp.calculateChecksum());
-        packet.setByteArray(headerLength, data);
+        
+	packet.setByteArray(headerLength, data);
         packet.scan(Ethernet.ID);
 
         if (pcap.sendPacket(packet) != Pcap.OK) {
             throw new IOException(String.format(
                     "Failed to send UDP packet with error: %s", pcap.getErr()));
         }
+//	else {
+//	pcap.close();
+//	}
     }
 
     private byte[] hexStringToByteArray(String s) {
@@ -169,10 +244,4 @@ public class RawUdpPacketSender {
         return data;
     }
 
-    public static void main(String[] args) throws IOException {
-        RawUdpPacketSender sender = new RawUdpPacketSender();
-        byte[] packet = "Hello".getBytes();
-        URI destination = URI.create("udp://192.168.40.33:6006");
-        sender.sendPacket(destination, packet);
-    }
 }
