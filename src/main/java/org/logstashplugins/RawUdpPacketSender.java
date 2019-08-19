@@ -49,7 +49,7 @@ public class RawUdpPacketSender {
         InetAddress address = InetAddress.getByName(destination.getHost());
         byte[] destinationAddress = address.getAddress();
         InetAddress sourceAddress = InetAddress.getByName(source.getHost());
-        sendPacket(sourceAddress.getAddress(), sourceAddress.getPort(),destinationAddress, port, packet, getMacAddressBytes(destinationMacAddress));
+        sendPacket(sourceAddress.getAddress(), source.getPort(),destinationAddress, port, packet, getMacAddressBytes(destinationMacAddress));
     }
 
     private Pcap createPcap() throws IOException {
@@ -59,7 +59,7 @@ public class RawUdpPacketSender {
         }
         
 	//bugged 
-	sourceMacAddress = getMacAddressBytes(randomMACAddress());;//device.getHardwareAddress();  //Use device's MAC address as the source address
+	sourceMacAddress = getMacAddressBytes("00:50:56:01:63:03");//randomMACAddress());;//device.getHardwareAddress();  //Use device's MAC address as the source address
         StringBuilder errorBuffer = new StringBuilder();
         int snapLen = 64 * 1024;
         int flags = Pcap.MODE_NON_PROMISCUOUS;
