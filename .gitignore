@@ -18,3 +18,5 @@ out/
 Gemfile*
 settings.gradle
 gradle.properties
+.project
+.settings/
