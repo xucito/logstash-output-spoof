@@ -68,7 +68,8 @@ dependencies {
    // compile 'com.savarese.rocksaw.net:rocksaw-1.1.0-jar-with-dependencies'
     //compile 'jnetpcap:jnetpcap:1.4.r1425-1g'
     compile group: 'jnetpcap', name: 'jnetpcap', version: '1.4.r1425-1g'
-    //compile group: 'jpcap', name: 'jpcap', version: '0.1.18-001'
+    compile "com.fasterxml.jackson.core:jackson-core:2.9.9" 
+   //compile group: 'jpcap', name: 'jpcap', version: '0.1.18-001'
    // compile group: 'org.apache', name: 'jNetPcap', version: '1.4.b0004-1'
     testCompile 'junit:junit:4.12'
     testCompile 'org.jruby:jruby-complete:9.1.13.0'

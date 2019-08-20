@@ -29,11 +29,10 @@ public class RawUdpPacketSender {
     private Pcap pcap = null;
     private int headerLength = getHeaderLength();
     //private int UDP_SOURCE_PORT = 44226;
-    private byte[] sourceMacAddress;
 
-    public RawUdpPacketSender() {
+    public RawUdpPacketSender(String interfaceName) {
         try {
-            pcap = createPcap();
+            pcap = createPcap(interfaceName);
             if(pcap == null)
             {
              System.out.println("Failed to start PCAP");
@@ -43,23 +42,22 @@ public class RawUdpPacketSender {
         }
     }
 
-    public void sendPacket(URI source,URI destination, byte[] packet, String destinationMacAddress)
-            throws IOException {
+    public void sendPacket(URI source,URI destination, byte[] packet, String destinationMacAddress, String sourceMacAddress)
+	 	    throws IOException {
         int port = destination.getPort();
         InetAddress address = InetAddress.getByName(destination.getHost());
         byte[] destinationAddress = address.getAddress();
         InetAddress sourceAddress = InetAddress.getByName(source.getHost());
-        sendPacket(sourceAddress.getAddress(), source.getPort(),destinationAddress, port, packet, getMacAddressBytes(destinationMacAddress));
+        sendPacket(sourceAddress.getAddress(), source.getPort(),destinationAddress, port, packet, getMacAddressBytes(destinationMacAddress), getMacAddressBytes(sourceMacAddress));
     }
 
-    private Pcap createPcap() throws IOException {
-        PcapIf device = getPcapDevice();
+    private Pcap createPcap(String deviceName) throws IOException {
+        PcapIf device = getPcapDevice(deviceName);
         if (device == null) {
             return null;
         }
         
 	//bugged 
-	sourceMacAddress = getMacAddressBytes("00:50:56:01:63:03");//randomMACAddress());;//device.getHardwareAddress();  //Use device's MAC address as the source address
         StringBuilder errorBuffer = new StringBuilder();
         int snapLen = 64 * 1024;
         int flags = Pcap.MODE_NON_PROMISCUOUS;
@@ -90,7 +88,7 @@ return macAddressBytes;
     }
     }
 
-    private String randomMACAddress(){
+    public static String randomMACAddress(){
     Random rand = new Random();
     byte[] macAddr = new byte[6];
     rand.nextBytes(macAddr);
@@ -110,7 +108,7 @@ return macAddressBytes;
     return sb.toString();
     }
 
-    private PcapIf getPcapDevice() {
+    private PcapIf getPcapDevice(String deviceName) {
         List<PcapIf> allDevs = new ArrayList<PcapIf>();
         StringBuilder errorBuffer = new StringBuilder();
         int r = Pcap.findAllDevs(allDevs, errorBuffer);
@@ -119,30 +117,32 @@ return macAddressBytes;
                     errorBuffer.toString()));
             return null;
         }
-        String deviceName = System.getProperty("raw_packet_network_interface", "eth32");
+      //  String deviceName = System.getProperty("raw_packet_network_interface", "eth32");
         
 	//Delete later
-	 for (PcapIf device : allDevs) {
-	    System.out.println(device.getName());
-        }
+	// for (PcapIf device : allDevs) {
+	//    System.out.println(device.getName());
 
-	
-	
+        //}
+
 	for (PcapIf device : allDevs) {
-            if (deviceName.equals(device.getName())) {
-                 System.out.println("Selected " + device.getName());
+           // if (deviceName.equals(device.getName())) {
+	   System.out.println("Comparing " + deviceName.toLowerCase() + " with " + device.getName().toLowerCase());
+            if(deviceName.toLowerCase().equals(device.getName().toLowerCase()))
+	    { 
+	    	System.out.println("Selected " + device.getName());
 	         return device;
             }
         }
-	System.out.println("Selected default device " + allDevs.get(4).getName());
-        return allDevs.get(4);
+	System.out.println("Selected default device " + allDevs.get(0).getName());
+        return allDevs.get(0);
     }
 
     private int getHeaderLength() {
         return 14 + 20 + 8; //Ethernet header + IP v4 header + UDP header
     }
 
-    private void sendPacket(byte[] spoofedSourceAddress, int sourcePort, byte[] destinationAddress, int destinationPort, byte[] data, byte[] destinationMacAddress)
+    private void sendPacket(byte[] spoofedSourceAddress, int sourcePort, byte[] destinationAddress, int destinationPort, byte[] data, byte[] destinationMacAddress, byte[] sourceMacAddress)
             throws IOException {
         int dataLength = data.length;
         int packetSize = headerLength + dataLength;
