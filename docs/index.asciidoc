@@ -34,89 +34,88 @@ Add plugin description here
 [cols="<,<,<",options="header",]
 |=======================================================================
 |Setting |Input type|Required
-| <<plugins-{type}s-{plugin}-a_setting_name>> |<<boolean,boolean>>|No
-| <<plugins-{type}s-{plugin}-another_setting_name>> |<<hash,hash>>|No
-| <<plugins-{type}s-{plugin}-setting_name_3>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-setting_name_4>> |<<number,number>>|No
-| <<plugins-{type}s-{plugin}-setting_name_5>> |<<array,array>>|No
-| <<plugins-{type}s-{plugin}-setting_name_6>> |<<bytes,bytes>>|No
-| <<plugins-{type}s-{plugin}-setting_name_7>> |<<path,path>>|No
-| <<plugins-{type}s-{plugin}-setting_name_8>> |<<password,password>>|No
-| <<plugins-{type}s-{plugin}-setting_name_9>> |<<uri,uri>>|No
+| <<plugins-{type}s-{plugin}-src_host>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-src_port>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-src_mac>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-dest_host>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-dest_port>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-dest_mac>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-message>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-interface>> |<<string,string>>|No
 |=======================================================================
 
-[id="plugins-{type}s-{plugin}-a_setting_name"]
-===== `a_setting_name` 
+[id="plugins-{type}s-{plugin}-src_host"]
+===== `src_host` 
 
-  * Value type is <<boolean,boolean>>
-  * Default value is `true`
-
-Add description here
-
-[id="plugins-{type}s-{plugin}-another_setting_name"]
-===== `another_setting_name` 
-
-  * Value type is <<hash,hash>>
-  * Default value is `{}`
-
-Add description here
-
-[id="plugins-{type}s-{plugin}-setting_name_3"]
-===== `setting_name_3` 
-
+  * This is a required setting.
   * Value type is <<string,string>>
-  * Default value is `{}`
+  * Default value is `""`
 
-Add description here
+The spoofed source ip address for the udp message. You can also use event dependent configuration here like pipeline => "%{src_host}"
 
-[id="plugins-{type}s-{plugin}-setting_name_4"]
-===== `setting_name_4` 
+[id="plugins-{type}s-{plugin}-src_port"]
+===== `src_port` 
 
-  * Value type is <<number,number>>
-  * Default value is `0`
+  * This is a required setting.
+  * Value type is <<string,string>>
+  * Default value is `"1314"`
 
-Add description here
+The spoofed source port for the udp message. You can also use event dependent configuration here like pipeline => "%{src_port}"
 
-[id="plugins-{type}s-{plugin}-setting_name_5"]
-===== `setting_name_5` 
+[id="plugins-{type}s-{plugin}-src_mac"]
+===== `src_mac` 
 
-  * Value type is <<array,array>>
-  * Default value is {}
+  * This is a required setting.
+  * Value type is <<string,string>>
+  * Default value is `""`
 
-Add description here
+The spoofed source mac address for the udp message. You can use your actual MAC address. You can also use event dependent configuration here like pipeline => "%{src_mac}".
 
-[id="plugins-{type}s-{plugin}-setting_name_6"]
-===== `setting_name_6` 
+[id="plugins-{type}s-{plugin}-dest_host"]
+===== `dest_host`
 
-  * Value type is <<bytes,bytes>>
-  * Default value is {}
+  * This is a required setting.
+  * Value type is <<string,string>>
+  * Default value is `""`
 
-Add description here
+The destination ip address for the udp message. You can also use event dependent configuration here like pipeline => "%{dest_host}".
 
-[id="plugins-{type}s-{plugin}-setting_name_7"]
-===== `setting_name_7` 
+[id="plugins-{type}s-{plugin}-dest_port"]
+===== `dest_port` 
 
-  * Value type is <<path,path>>
-  * Default value is {}
+  * This is a required setting.
+  * Value type is <<string,string>>
+  * Default value is `"514"`
+  
+The destination port for the udp message. You can also use event dependent configuration here like pipeline => "%{dest_port}".
 
-Add description here
+[id="plugins-{type}s-{plugin}-dest_mac"]
+===== `dest_mac` 
 
-[id="plugins-{type}s-{plugin}-setting_name_8"]
-===== `setting_name_8` 
+  * This is a required setting.
+  * Value type is <<string,string>>
+  * Default value is `""`
 
-  * Value type is <<password,password>>
-  * Default value is {}
+The destination MAC address for the udp message, this can be the MAC address of the device used for the first hop (Using ARP tables). You can also use event dependent configuration here like pipeline => "%{dest_mac}".
 
-Add description here
+[id="plugins-{type}s-{plugin}-message"]
+===== `message` 
 
+  * This is a required setting.
+  * Value type is <<string,string>>
+  * Default value is `"message"`
 
-[id="plugins-{type}s-{plugin}-setting_name_9"]
-===== `setting_name_9` 
+The udp message
 
-  * Value type is <<uri,uri>>
-  * Default value is {}
+[id="plugins-{type}s-{plugin}-interface"]
+===== `interface` 
 
-Add description here
+  * This is a required setting.
+  * Value type is <<string,string>>
+  * Default value is `""`
+
+The name of the interface to send the message from. 
+
 
 // The full list of Value Types is here: 
 // https://www.elastic.co/guide/en/logstash/current/configuration-file-structure.html
