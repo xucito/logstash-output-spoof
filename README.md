@@ -23,3 +23,32 @@ Tested using Ubuntu 16.04 and 18.04
 `tar -xvf jnetpcap-1.4.r1425`
 
 `cp jnetpcap-1.4.r1425/libjnetpcap.so /lib/`
+
+## Sample config
+
+```
+input {
+  generator { message => "Hello world!" count => 1 }
+}
+filter {
+  mutate {
+   add_field => {
+      "extra_field" => "this is the test field"
+      "src_host" => "3.3.3.3"
+   }
+   update => {"message" => "this should be the new message"}
+  }
+}
+output {
+  spoof {
+    dest_host => "<REPLACE WITH YOUR DESTINATION IP>"
+    dest_port => "<REPLACE WITH YOUR DESTINATION PORT>"
+    src_host => "%{src_host}"
+    src_port => "2222"
+    dest_mac =>  "<REPLACE WITH YOUR DESTINATION MAC ADDRESS>"
+    src_mac => "<REPLACE WITH YOUR MAC ADDRESS>"
+    message => "%{message}"
+    interface => "ens32"
+  }
+}
+```
