@@ -24,6 +24,10 @@ Tested using Ubuntu 16.04 and 18.04
 
 `cp jnetpcap-1.4.r1425/libjnetpcap.so /lib/`
 
+## Write up
+
+A detailed walk through of usage can be found [here](https://tonysbit.blog/2019/10/05/spoofing-udp-traffic-with-logstash/)
+
 ## Sample config
 
 ```
