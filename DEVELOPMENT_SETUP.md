@@ -14,6 +14,8 @@ Build
 
 `rake bootstrap`
 
+`rake plugin:install-default`
+
 Git clone plugin
 
 `git clone https://github.com/xucito/logstash-output-spoof.git`
