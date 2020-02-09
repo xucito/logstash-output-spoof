@@ -165,9 +165,9 @@ return macAddressBytes;
         ip4.source(sourceAddress);
         ip4.destination(destinationAddress);
         ip4.ttl(64);
-        ip4.flags(2); //Sets to DF so that it does not fragment message
+        ip4.flags(0); //2 Sets to DF so that it does not fragment message
         ip4.offset(0);
-        ip4.checksum(ip4.calculateChecksum());
+        //ip4.checksum(ip4.calculateChecksum);
 
         //UDP packet
         packet.scan(JProtocol.ETHERNET_ID);
@@ -175,10 +175,20 @@ return macAddressBytes;
         udp.source(sourcePort);
         udp.destination(destinationPort);
         udp.length(packetSize - ethernet.size() - ip4.size());
-        udp.checksum(udp.calculateChecksum());
-        
-	packet.setByteArray(headerLength, data);
-        packet.scan(Ethernet.ID);
+        packet.setByteArray(headerLength, data);
+	packet.scan(Ethernet.ID);
+	ip4.checksum(ip4.calculateChecksum());
+        udp.checksum(0);
+        //ip4.recalculateChecksum();
+	//udp.recalculateChecksum();
+	//System.out.println(ip4.isChecksumValid());
+	//System.out.println(udp.isChecksumValid());
+	
+        //int cs = udp.calculateChecksum();
+	//udp.setUShort(6,cs);
+	
+	// packet.setByteArray(headerLength, data);
+        // packet.scan(Ethernet.ID);
 
         if (pcap.sendPacket(packet) != Pcap.OK) {
             throw new IOException(String.format(
@@ -195,5 +205,4 @@ return macAddressBytes;
         }
         return data;
     }
-
 }
