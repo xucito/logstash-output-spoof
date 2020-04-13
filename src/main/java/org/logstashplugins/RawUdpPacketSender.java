@@ -183,7 +183,7 @@ return macAddressBytes;
             udp.source(sourcePort);
             udp.destination(destinationPort);
             udp.length(packetSize - ethernet.size() - ip4.size());
-            packet.setByteArray(headerLength, Arrays.copyOfRange(data, i, i + bytesToSend);
+            packet.setByteArray(headerLength, Arrays.copyOfRange(data, fragment * mtuSize, (fragment * mtuSize) + bytesToSend);
             packet.scan(Ethernet.ID);
             ip4.checksum(ip4.calculateChecksum());
             udp.checksum(0);
