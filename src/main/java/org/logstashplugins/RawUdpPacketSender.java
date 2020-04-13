@@ -144,55 +144,55 @@ return macAddressBytes;
 
     private void sendPacket(byte[] spoofedSourceAddress, int sourcePort, byte[] destinationAddress, int destinationPort, byte[] data, byte[] destinationMacAddress, byte[] sourceMacAddress)
             throws IOException {
+        int mtuSize = 1500;
         int dataLength = data.length;
-        int packetSize = headerLength + dataLength;
-        JPacket packet = new JMemoryPacket(packetSize);
-        packet.order(ByteOrder.BIG_ENDIAN);
-        packet.setUShort(12, 0x0800);
-        packet.scan(JProtocol.ETHERNET_ID);
-        Ethernet ethernet = packet.getHeader(new Ethernet());
-        ethernet.source(sourceMacAddress);
-        ethernet.destination(destinationMacAddress);
-        ethernet.checksum(ethernet.calculateChecksum());
+        var fragment = 0;
 
-        //IP v4 packet
-        packet.setUByte(14, 0x40 | 0x05);
-        packet.scan(JProtocol.ETHERNET_ID);
-        Ip4 ip4 = packet.getHeader(new Ip4());
-        ip4.type(Ip4.Ip4Type.UDP);
-        ip4.length(packetSize - ethernet.size());
-        byte[] sourceAddress = spoofedSourceAddress;
-        ip4.source(sourceAddress);
-        ip4.destination(destinationAddress);
-        ip4.ttl(64);
-        ip4.flags(0); //2 Sets to DF so that it does not fragment message
-        ip4.offset(0);
-        //ip4.checksum(ip4.calculateChecksum);
+        //From byte 0 to data length
+        while((fragment + 1) * mtuSize < dataLength)
+        {
+            var remainingData = dataLength - (fragment * mtuSize);
+            var bytesToSend = remainingData < mtuSize ? remainingData : mtuSize;
+            int packetSize = headerLength + bytesToSend;
 
-        //UDP packet
-        packet.scan(JProtocol.ETHERNET_ID);
-        Udp udp = packet.getHeader(new Udp());
-        udp.source(sourcePort);
-        udp.destination(destinationPort);
-        udp.length(packetSize - ethernet.size() - ip4.size());
-        packet.setByteArray(headerLength, data);
-	packet.scan(Ethernet.ID);
-	ip4.checksum(ip4.calculateChecksum());
-        udp.checksum(0);
-        //ip4.recalculateChecksum();
-	//udp.recalculateChecksum();
-	//System.out.println(ip4.isChecksumValid());
-	//System.out.println(udp.isChecksumValid());
-	
-        //int cs = udp.calculateChecksum();
-	//udp.setUShort(6,cs);
-	
-	// packet.setByteArray(headerLength, data);
-        // packet.scan(Ethernet.ID);
+            JPacket packet = new JMemoryPacket(packetSize);
+            packet.order(ByteOrder.BIG_ENDIAN);
+            packet.setUShort(12, 0x0800);
+            packet.scan(JProtocol.ETHERNET_ID);
+            Ethernet ethernet = packet.getHeader(new Ethernet());
+            ethernet.source(sourceMacAddress);
+            ethernet.destination(destinationMacAddress);
+            ethernet.checksum(ethernet.calculateChecksum());
 
-        if (pcap.sendPacket(packet) != Pcap.OK) {
-            throw new IOException(String.format(
-                    "Failed to send UDP packet with error: %s", pcap.getErr()));
+            //IP v4 packet
+            packet.setUByte(14, 0x40 | 0x05);
+            packet.scan(JProtocol.ETHERNET_ID);
+            Ip4 ip4 = packet.getHeader(new Ip4());
+            ip4.type(Ip4.Ip4Type.UDP);
+            ip4.length(packetSize - ethernet.size());
+            byte[] sourceAddress = spoofedSourceAddress;
+            ip4.source(sourceAddress);
+            ip4.destination(destinationAddress);
+            ip4.ttl(64);
+            ip4.flags(0); //2 Sets to DF so that it does not fragment message
+            ip4.offset(0);
+
+            //UDP packet
+            packet.scan(JProtocol.ETHERNET_ID);
+            Udp udp = packet.getHeader(new Udp());
+            udp.source(sourcePort);
+            udp.destination(destinationPort);
+            udp.length(packetSize - ethernet.size() - ip4.size());
+            packet.setByteArray(headerLength, Arrays.copyOfRange(data, i, i + bytesToSend);
+            packet.scan(Ethernet.ID);
+            ip4.checksum(ip4.calculateChecksum());
+            udp.checksum(0);
+
+            if (pcap.sendPacket(packet) != Pcap.OK) {
+                throw new IOException(String.format(
+                        "Failed to send UDP packet with error: %s", pcap.getErr()));
+            }
+            fragment += 1;
         }
     }
 
