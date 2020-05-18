@@ -29,29 +29,27 @@ public class RawUdpPacketSender {
 
     private Pcap pcap = null;
     private int headerLength = getHeaderLength();
-    //private int UDP_SOURCE_PORT = 44226;
     private String _interfaceName;
 
     public RawUdpPacketSender(String interfaceName) {
         try {
             _interfaceName = interfaceName;
             pcap = createPcap(interfaceName);
-            if(pcap == null)
-            {
-             System.out.println("Failed to start PCAP");
+            if (pcap == null) {
+                System.out.println("Failed to start PCAP");
             }
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Failed to start pcap library.", e);
         }
     }
 
-    public void sendPacket(URI source,URI destination, byte[] packet, String destinationMacAddress, String sourceMacAddress)
-	 	    throws IOException {
+    public void sendPacket(URI source, URI destination, byte[] packet, String destinationMacAddress, String sourceMacAddress)
+            throws IOException {
         int port = destination.getPort();
         InetAddress address = InetAddress.getByName(destination.getHost());
         byte[] destinationAddress = address.getAddress();
         InetAddress sourceAddress = InetAddress.getByName(source.getHost());
-        sendPacket(sourceAddress.getAddress(), source.getPort(),destinationAddress, port, packet, getMacAddressBytes(destinationMacAddress), getMacAddressBytes(sourceMacAddress));
+        sendPacket(sourceAddress.getAddress(), source.getPort(), destinationAddress, port, packet, getMacAddressBytes(destinationMacAddress), getMacAddressBytes(sourceMacAddress));
     }
 
     private Pcap createPcap(String deviceName) throws IOException {
@@ -59,8 +57,8 @@ public class RawUdpPacketSender {
         if (device == null) {
             return null;
         }
-        
-	//bugged 
+
+        //bugged
         StringBuilder errorBuffer = new StringBuilder();
         int snapLen = 64 * 1024;
         int flags = Pcap.MODE_NON_PROMISCUOUS;
@@ -69,46 +67,43 @@ public class RawUdpPacketSender {
                 errorBuffer);
         if (logger.isLoggable(Level.INFO)) {
             logger.info(String.format("Pcap starts for device %s successfully.", device));
-	 }
+        }
         return pcap;
     }
-     
-    private byte[] getMacAddressBytes(String macAddress)
-    {
-	 try {
-	  String[] macAddressParts = macAddress.split(":");
-byte[] macAddressBytes = new byte[6];
-for(int i=0; i<6; i++){
-    Integer hex = Integer.parseInt(macAddressParts[i], 16);
-    macAddressBytes[i] = hex.byteValue();
-}
-return macAddressBytes;
-     }
-    catch(Exception e)
-    {
+
+    private byte[] getMacAddressBytes(String macAddress) {
+        try {
+            String[] macAddressParts = macAddress.split(":");
+            byte[] macAddressBytes = new byte[6];
+            for (int i = 0; i < 6; i++) {
+                Integer hex = Integer.parseInt(macAddressParts[i], 16);
+                macAddressBytes[i] = hex.byteValue();
+            }
+            return macAddressBytes;
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
-    }
-    }
-
-    public static String randomMACAddress(){
-    Random rand = new Random();
-    byte[] macAddr = new byte[6];
-    rand.nextBytes(macAddr);
-
-    macAddr[0] = (byte)(macAddr[0] & (byte)254);  //zeroing last 2 bytes to make it unicast and locally adminstrated
-
-    StringBuilder sb = new StringBuilder(18);
-    for(byte b : macAddr){
-
-        if(sb.length() > 0)
-            sb.append(":");
-
-        sb.append(String.format("%02x", b));
+        }
     }
 
+    public static String randomMACAddress() {
+        Random rand = new Random();
+        byte[] macAddr = new byte[6];
+        rand.nextBytes(macAddr);
 
-    return sb.toString();
+        macAddr[0] = (byte) (macAddr[0] & (byte) 254);  //zeroing last 2 bytes to make it unicast and locally adminstrated
+
+        StringBuilder sb = new StringBuilder(18);
+        for (byte b : macAddr) {
+
+            if (sb.length() > 0)
+                sb.append(":");
+
+            sb.append(String.format("%02x", b));
+        }
+
+
+        return sb.toString();
     }
 
     private PcapIf getPcapDevice(String deviceName) {
@@ -120,24 +115,15 @@ return macAddressBytes;
                     errorBuffer.toString()));
             return null;
         }
-      //  String deviceName = System.getProperty("raw_packet_network_interface", "eth32");
-        
-	//Delete later
-	// for (PcapIf device : allDevs) {
-	//    System.out.println(device.getName());
 
-        //}
-
-	for (PcapIf device : allDevs) {
-           // if (deviceName.equals(device.getName())) {
-	   System.out.println("Comparing " + deviceName.toLowerCase() + " with " + device.getName().toLowerCase());
-            if(deviceName.toLowerCase().equals(device.getName().toLowerCase()))
-	    { 
-	    	System.out.println("Selected " + device.getName());
-	         return device;
+        for (PcapIf device : allDevs) {
+            //System.out.println("Comparing " + deviceName.toLowerCase() + " with " + device.getName().toLowerCase());
+            if (deviceName.toLowerCase().equals(device.getName().toLowerCase())) {
+                System.out.println("Selected " + device.getName());
+                return device;
             }
         }
-	System.out.println("Selected default device " + allDevs.get(0).getName());
+        System.out.println("Selected default device " + allDevs.get(0).getName());
         return allDevs.get(0);
     }
 
@@ -145,126 +131,65 @@ return macAddressBytes;
         return 14 + 20 + 8; //Ethernet header + IP v4 header + UDP header
     }
 
-    //https://www.javatips.net/api/diddler-master/src/org/jnetpcap/protocol/network/Ip4.java#
+    // https://www.javatips.net/api/diddler-master/src/org/jnetpcap/protocol/network/Ip4.java#
     private void sendPacket(byte[] spoofedSourceAddress, int sourcePort, byte[] destinationAddress, int destinationPort, byte[] data, byte[] destinationMacAddress, byte[] sourceMacAddress)
             throws IOException {
         int mtuSize = 1472;
         int dataLength = data.length;
         int fragment = 0;
-	int offset = 0;
-	Random r = new Random();
-	// https://tools.ietf.org/html/rfc6864
-        int id = r.nextInt(65536); // 0 - 65535
-       //From byte 0 to data length
-        //while(fragment * mtuSize < dataLength)
-        //{
-            //int remainingData = dataLength - (fragment * mtuSize);
-            //int bytesToSend = remainingData < mtuSize ? remainingData : mtuSize;
-            //int packetSize = headerLength + bytesToSend;
-            //System.out.println("Sending packet " + (fragment * mtuSize) + " to " + (fragment * mtuSize + bytesToSend - 1) + " packet size " + packetSize);
-      while(fragment * mtuSize < dataLength)
-        {    
-      	int remainingData = dataLength - (fragment * mtuSize);
+        int offset = 0;
+        Random r = new Random();
+        // https://tools.ietf.org/html/rfc6864
+        int id = r.nextInt(65536); 
+
+        while (fragment * mtuSize < dataLength) {
+            int remainingData = dataLength - (fragment * mtuSize);
             int bytesToSend = remainingData < mtuSize ? remainingData : mtuSize;
             int packetSize = headerLength + bytesToSend;
-	    JPacket packet = new JMemoryPacket(packetSize);
-	    //Udp udp = packet.getHeader(new Udp());
-            //Ethernet ethernet = packet.getHeader(new Ethernet());
-	   // Ip4 ip4 = packet.getHeader(new Ip4());
-	    //Udp udp = packet.getHeader(new Udp());
-	    //System.out.println(packet.toString());
-	    packet.scan(JProtocol.ETHERNET_ID);
-	    packet.order(ByteOrder.BIG_ENDIAN);
-            packet.setUShort(12, 0x0800);
-           // packet.scan(JProtocol.ETHERNET_ID);
-	    //Ethernet ethernet = packet.getHeader(new Ethernet());
-	    packet.setUByte(14, 0x40 | 0x05);
-	    //packet.scan(JProtocol.ETHERNET_ID);
-            Ethernet ethernet = packet.getHeader(new Ethernet());
-	    ethernet.source(sourceMacAddress);
-	     ethernet.destination(destinationMacAddress);
-            ethernet.checksum(ethernet.calculateChecksum());
-	    //packet.setUByte(14, 0x40 | 0x05);
+            JPacket packet = new JMemoryPacket(packetSize);
+
             packet.scan(JProtocol.ETHERNET_ID);
-	    //Ip4 ip4 = packet.getHeader(new Ip4());
+            packet.order(ByteOrder.BIG_ENDIAN);
+            packet.setUShort(12, 0x0800);
+            packet.setUByte(14, 0x40 | 0x05);
+            Ethernet ethernet = packet.getHeader(new Ethernet());
+            ethernet.source(sourceMacAddress);
+            ethernet.destination(destinationMacAddress);
+            ethernet.checksum(ethernet.calculateChecksum());
+            packet.scan(JProtocol.ETHERNET_ID);
             Ip4 ip4 = packet.getHeader(new Ip4());
-	    ip4.type(Ip4.Ip4Type.UDP);
-            //ip4.length(packetSize - ethernet.size());
+            ip4.type(Ip4.Ip4Type.UDP);
             byte[] sourceAddress = spoofedSourceAddress;
             ip4.source(sourceAddress);
             ip4.destination(destinationAddress);
-	    ip4.length(packetSize - ethernet.size());
-            // packet.scan(JProtocol.UDP_ID);
-            //packet.scan(JProtocol.UDP_ID);	    
-	    //while(fragment * mtuSize < dataLength)
-        //{
-	    //remainingData = dataLength - (fragment * mtuSize);
-            //bytesToSend = remainingData < mtuSize ? remainingData : mtuSize;
-            //packetSize = headerLength + bytesToSend;
-	    //ip4.ttl(64);
-	    //ip4.flags(remainingData > mtuSize ? 0x1: 0); //Set to 2 if there are more fragments else set to 0
-	    //ip4.offset(offset / 8);//(offset / 8); //based on (1472 / 8) = 185
-            //packet.scan(JProtocol.ETHERNET_ID);
-	     byte[] payload = Arrays.copyOfRange(data, fragment * mtuSize, (fragment * mtuSize) + bytesToSend);
+            ip4.length(packetSize - ethernet.size());
+            byte[] payload = Arrays.copyOfRange(data, fragment * mtuSize, (fragment * mtuSize) + bytesToSend);
 
-		ip4.ttl(64);
-                ip4.flags(remainingData > mtuSize ? 0x1: 0); //Set to 2 if there are more fragments else set to 0
-                ip4.offset(offset / 8);
-	         packet.scan(JProtocol.ETHERNET_ID);
-	    ip4.id(id);
-     		 if(fragment == 0)
-	    {
-		 Udp	udp = packet.getHeader(new Udp());
-	    	udp.source(sourcePort);
-            	udp.destination(destinationPort);
-		udp.length(packetSize - ethernet.size() - ip4.size());
-         	udp.checksum(0);
-	     if(udp == null)
-            {
-                throw new IOException("Failed to get udp header from packet.");
+            ip4.ttl(64);
+            ip4.flags(remainingData > mtuSize ? 0x1 : 0); //Set to 2 if there are more fragments else set to 0
+            ip4.offset(offset / 8);
+            packet.scan(JProtocol.ETHERNET_ID);
+            ip4.id(id);
+            if (fragment == 0) {
+                Udp udp = packet.getHeader(new Udp());
+                udp.source(sourcePort);
+                udp.destination(destinationPort);
+                udp.length(packetSize - ethernet.size() - ip4.size());
+                udp.checksum(0);
+                if (udp == null) {
+                    throw new IOException("Failed to get udp header from packet.");
+                }
+
             }
+            packet.setByteArray(headerLength, payload);
+            ip4.checksum(ip4.calculateChecksum());
 
-	    }
-          	 // byte[] payload = Arrays.copyOfRange(data, fragment * mtuSize, (fragment * mtuSize) + bytesToSend);
-           	 packet.setByteArray(headerLength, payload);
-           	 //packet.scan(Ethernet.ID);
-            	ip4.checksum(ip4.calculateChecksum());
-
-
-            //udp.source(sourcePort);
-            //udp.destination(destinationPort);
-
-	   
-	    //ip4.length(packetSize - ethernet.size());
-	    //System.out.println(ip4.offset());
-	    //UDP packet
-            //packet.scan(JProtocol.UDP_ID);
-	    //packet.scan(JProtocol.ETHERNET_ID);
-	    //System.out.println(packet.toString());
-            //Udp udp = packet.getHeader(new Udp());
-	    //packet.scan(JProtocol.ETHERNET_ID); 
-	    //packet.scan(JProtocol.UDP_ID);
-	    //packet.scan(JProtocol.ETHERNET_ID);
-	    //Udp udp = packet.getHeader(new Udp());
-	    //packet.scan(JProtocol.ETHERNET_ID);
-            //udp.source(sourcePort);
-            //udp.destination(destinationPort);
-            //udp.length(packetSize - ethernet.size() - ip4.size());
-           // udp.checksum(0);
-	    //byte[] payload = Arrays.copyOfRange(data, fragment * mtuSize, (fragment * mtuSize) + bytesToSend);
-            //packet.setByteArray(headerLength, payload);
-            //packet.scan(Ethernet.ID);
-            //ip4.checksum(ip4.calculateChecksum());
-            //ip4.offset(fragment * 184);
-	    //packet.scan(JProtocol.UDP_ID);
-            //System.out.println(packet.toString());
-	    //packet.scan(JProtocol.ETHERNET_ID); 
-	    if (pcap.sendPacket(packet) != Pcap.OK) {
+            if (pcap.sendPacket(packet) != Pcap.OK) {
                 throw new IOException(String.format(
                         "Failed to send UDP packet with error: %s", pcap.getErr()));
             }
             fragment += 1;
-	    offset += payload.length;
+            offset += payload.length;
         }
     }
 
