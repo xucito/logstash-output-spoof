@@ -14,6 +14,7 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.List;
@@ -29,9 +30,11 @@ public class RawUdpPacketSender {
     private Pcap pcap = null;
     private int headerLength = getHeaderLength();
     //private int UDP_SOURCE_PORT = 44226;
+    private String _interfaceName;
 
     public RawUdpPacketSender(String interfaceName) {
         try {
+            _interfaceName = interfaceName;
             pcap = createPcap(interfaceName);
             if(pcap == null)
             {
@@ -142,57 +145,126 @@ return macAddressBytes;
         return 14 + 20 + 8; //Ethernet header + IP v4 header + UDP header
     }
 
+    //https://www.javatips.net/api/diddler-master/src/org/jnetpcap/protocol/network/Ip4.java#
     private void sendPacket(byte[] spoofedSourceAddress, int sourcePort, byte[] destinationAddress, int destinationPort, byte[] data, byte[] destinationMacAddress, byte[] sourceMacAddress)
             throws IOException {
-        int mtuSize = 1500;
+        int mtuSize = 1472;
         int dataLength = data.length;
-        var fragment = 0;
-
-        //From byte 0 to data length
-        while((fragment + 1) * mtuSize < dataLength)
-        {
-            var remainingData = dataLength - (fragment * mtuSize);
-            var bytesToSend = remainingData < mtuSize ? remainingData : mtuSize;
+        int fragment = 0;
+	int offset = 0;
+	Random r = new Random();
+	// https://tools.ietf.org/html/rfc6864
+        int id = r.nextInt(65536); // 0 - 65535
+       //From byte 0 to data length
+        //while(fragment * mtuSize < dataLength)
+        //{
+            //int remainingData = dataLength - (fragment * mtuSize);
+            //int bytesToSend = remainingData < mtuSize ? remainingData : mtuSize;
+            //int packetSize = headerLength + bytesToSend;
+            //System.out.println("Sending packet " + (fragment * mtuSize) + " to " + (fragment * mtuSize + bytesToSend - 1) + " packet size " + packetSize);
+      while(fragment * mtuSize < dataLength)
+        {    
+      	int remainingData = dataLength - (fragment * mtuSize);
+            int bytesToSend = remainingData < mtuSize ? remainingData : mtuSize;
             int packetSize = headerLength + bytesToSend;
-
-            JPacket packet = new JMemoryPacket(packetSize);
-            packet.order(ByteOrder.BIG_ENDIAN);
+	    JPacket packet = new JMemoryPacket(packetSize);
+	    //Udp udp = packet.getHeader(new Udp());
+            //Ethernet ethernet = packet.getHeader(new Ethernet());
+	   // Ip4 ip4 = packet.getHeader(new Ip4());
+	    //Udp udp = packet.getHeader(new Udp());
+	    //System.out.println(packet.toString());
+	    packet.scan(JProtocol.ETHERNET_ID);
+	    packet.order(ByteOrder.BIG_ENDIAN);
             packet.setUShort(12, 0x0800);
-            packet.scan(JProtocol.ETHERNET_ID);
+           // packet.scan(JProtocol.ETHERNET_ID);
+	    //Ethernet ethernet = packet.getHeader(new Ethernet());
+	    packet.setUByte(14, 0x40 | 0x05);
+	    //packet.scan(JProtocol.ETHERNET_ID);
             Ethernet ethernet = packet.getHeader(new Ethernet());
-            ethernet.source(sourceMacAddress);
-            ethernet.destination(destinationMacAddress);
+	    ethernet.source(sourceMacAddress);
+	     ethernet.destination(destinationMacAddress);
             ethernet.checksum(ethernet.calculateChecksum());
-
-            //IP v4 packet
-            packet.setUByte(14, 0x40 | 0x05);
+	    //packet.setUByte(14, 0x40 | 0x05);
             packet.scan(JProtocol.ETHERNET_ID);
+	    //Ip4 ip4 = packet.getHeader(new Ip4());
             Ip4 ip4 = packet.getHeader(new Ip4());
-            ip4.type(Ip4.Ip4Type.UDP);
-            ip4.length(packetSize - ethernet.size());
+	    ip4.type(Ip4.Ip4Type.UDP);
+            //ip4.length(packetSize - ethernet.size());
             byte[] sourceAddress = spoofedSourceAddress;
             ip4.source(sourceAddress);
             ip4.destination(destinationAddress);
-            ip4.ttl(64);
-            ip4.flags(0); //2 Sets to DF so that it does not fragment message
-            ip4.offset(0);
+	    ip4.length(packetSize - ethernet.size());
+            // packet.scan(JProtocol.UDP_ID);
+            //packet.scan(JProtocol.UDP_ID);	    
+	    //while(fragment * mtuSize < dataLength)
+        //{
+	    //remainingData = dataLength - (fragment * mtuSize);
+            //bytesToSend = remainingData < mtuSize ? remainingData : mtuSize;
+            //packetSize = headerLength + bytesToSend;
+	    //ip4.ttl(64);
+	    //ip4.flags(remainingData > mtuSize ? 0x1: 0); //Set to 2 if there are more fragments else set to 0
+	    //ip4.offset(offset / 8);//(offset / 8); //based on (1472 / 8) = 185
+            //packet.scan(JProtocol.ETHERNET_ID);
+	     byte[] payload = Arrays.copyOfRange(data, fragment * mtuSize, (fragment * mtuSize) + bytesToSend);
 
-            //UDP packet
-            packet.scan(JProtocol.ETHERNET_ID);
-            Udp udp = packet.getHeader(new Udp());
-            udp.source(sourcePort);
-            udp.destination(destinationPort);
-            udp.length(packetSize - ethernet.size() - ip4.size());
-            packet.setByteArray(headerLength, Arrays.copyOfRange(data, fragment * mtuSize, (fragment * mtuSize) + bytesToSend);
-            packet.scan(Ethernet.ID);
-            ip4.checksum(ip4.calculateChecksum());
-            udp.checksum(0);
+		ip4.ttl(64);
+                ip4.flags(remainingData > mtuSize ? 0x1: 0); //Set to 2 if there are more fragments else set to 0
+                ip4.offset(offset / 8);
+	         packet.scan(JProtocol.ETHERNET_ID);
+	    ip4.id(id);
+     		 if(fragment == 0)
+	    {
+		 Udp	udp = packet.getHeader(new Udp());
+	    	udp.source(sourcePort);
+            	udp.destination(destinationPort);
+		udp.length(packetSize - ethernet.size() - ip4.size());
+         	udp.checksum(0);
+	     if(udp == null)
+            {
+                throw new IOException("Failed to get udp header from packet.");
+            }
 
-            if (pcap.sendPacket(packet) != Pcap.OK) {
+	    }
+          	 // byte[] payload = Arrays.copyOfRange(data, fragment * mtuSize, (fragment * mtuSize) + bytesToSend);
+           	 packet.setByteArray(headerLength, payload);
+           	 //packet.scan(Ethernet.ID);
+            	ip4.checksum(ip4.calculateChecksum());
+
+
+            //udp.source(sourcePort);
+            //udp.destination(destinationPort);
+
+	   
+	    //ip4.length(packetSize - ethernet.size());
+	    //System.out.println(ip4.offset());
+	    //UDP packet
+            //packet.scan(JProtocol.UDP_ID);
+	    //packet.scan(JProtocol.ETHERNET_ID);
+	    //System.out.println(packet.toString());
+            //Udp udp = packet.getHeader(new Udp());
+	    //packet.scan(JProtocol.ETHERNET_ID); 
+	    //packet.scan(JProtocol.UDP_ID);
+	    //packet.scan(JProtocol.ETHERNET_ID);
+	    //Udp udp = packet.getHeader(new Udp());
+	    //packet.scan(JProtocol.ETHERNET_ID);
+            //udp.source(sourcePort);
+            //udp.destination(destinationPort);
+            //udp.length(packetSize - ethernet.size() - ip4.size());
+           // udp.checksum(0);
+	    //byte[] payload = Arrays.copyOfRange(data, fragment * mtuSize, (fragment * mtuSize) + bytesToSend);
+            //packet.setByteArray(headerLength, payload);
+            //packet.scan(Ethernet.ID);
+            //ip4.checksum(ip4.calculateChecksum());
+            //ip4.offset(fragment * 184);
+	    //packet.scan(JProtocol.UDP_ID);
+            //System.out.println(packet.toString());
+	    //packet.scan(JProtocol.ETHERNET_ID); 
+	    if (pcap.sendPacket(packet) != Pcap.OK) {
                 throw new IOException(String.format(
                         "Failed to send UDP packet with error: %s", pcap.getErr()));
             }
             fragment += 1;
+	    offset += payload.length;
         }
     }
 
