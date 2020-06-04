@@ -91,9 +91,8 @@ public class Spoof implements Output {
             try
             {
 		Event event = z.next();
-		System.out.println("Original Result " + ((org.logstash.Event)event).toJson());
-		System.out.println("Interpolation Result: " + StringInterpolation.evaluate(event, dest_port));
-
+		//System.out.println("Original Result " + ((org.logstash.Event)event).toJson());
+		//System.out.println("Interpolation Result: " + StringInterpolation.evaluate(event, dest_port));
                 String evaluatedMessage = StringInterpolation.evaluate(event, message);
 	        String evaluatedDestHost = StringInterpolation.evaluate(event, dest_host);
 		int evaluatedDestPort = Integer.parseInt(StringInterpolation.evaluate(event, dest_port));
@@ -104,7 +103,7 @@ public class Spoof implements Output {
 		byte[] packet = evaluatedMessage.getBytes();
                 URI destinationURI = URI.create("udp://" + evaluatedDestHost + ":" + evaluatedDestPort );
                 URI sourceURI = URI.create("udp://" + evaluatedSourceHost + ":" + evaluatedSourcePort);
-                System.out.println("Sending packets to " + destinationURI.getHost() + "(" + evaluatedDestMAC + ")" + " on port " + destinationURI.getPort() + " from spoofed address " + sourceURI.getHost());
+                //System.out.println("Sending packets to " + destinationURI.getHost() + "(" + evaluatedDestMAC + ")" + " on port " + destinationURI.getPort() + " from spoofed address " + sourceURI.getHost());
                 sender.sendPacket(sourceURI, destinationURI, packet, evaluatedDestMAC, evaluatedSourceMAC);
 	    }				
             catch(Exception e)
