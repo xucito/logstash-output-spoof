@@ -36,7 +36,7 @@ public class RawUdpPacketSender {
             _interfaceName = interfaceName;
             pcap = createPcap(interfaceName);
             if (pcap == null) {
-                System.out.println("Failed to start PCAP");
+                logger.log(Level.SEVERE, "Failed to start PCAP");
             }
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Failed to start pcap library.", e);
@@ -117,13 +117,11 @@ public class RawUdpPacketSender {
         }
 
         for (PcapIf device : allDevs) {
-            //System.out.println("Comparing " + deviceName.toLowerCase() + " with " + device.getName().toLowerCase());
             if (deviceName.toLowerCase().equals(device.getName().toLowerCase())) {
-                System.out.println("Selected " + device.getName());
                 return device;
             }
         }
-        System.out.println("Selected default device " + allDevs.get(0).getName());
+        //logger.log(Level.DEBUG, String.format("Selected default device " + allDevs.get(0).getName());
         return allDevs.get(0);
     }
 
