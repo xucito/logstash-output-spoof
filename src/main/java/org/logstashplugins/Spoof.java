@@ -104,7 +104,14 @@ public class Spoof implements Output {
                 URI destinationURI = URI.create("udp://" + evaluatedDestHost + ":" + evaluatedDestPort );
                 URI sourceURI = URI.create("udp://" + evaluatedSourceHost + ":" + evaluatedSourcePort);
                 //System.out.println("Sending packets to " + destinationURI.getHost() + "(" + evaluatedDestMAC + ")" + " on port " + destinationURI.getPort() + " from spoofed address " + sourceURI.getHost());
-                sender.sendPacket(sourceURI, destinationURI, packet, evaluatedDestMAC, evaluatedSourceMAC);
+                try{
+		sender.sendPacket(sourceURI, destinationURI, packet, evaluatedDestMAC, evaluatedSourceMAC);
+	        }
+		catch(Exception sendMessageException)
+		{
+		 System.out.println("Failed to send message: " + evaluatedMessage); 
+	         throw sendMessageException;
+		}
 	    }				
             catch(Exception e)
             {
