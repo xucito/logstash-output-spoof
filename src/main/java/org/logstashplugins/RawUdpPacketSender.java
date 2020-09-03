@@ -138,14 +138,14 @@ public class RawUdpPacketSender {
         int offset = 0;
         Random r = new Random();
         // https://tools.ietf.org/html/rfc6864
-        int id = r.nextInt(65536); 
+        int id = 100; //r.nextInt(65536); 
 
         while (fragment * mtuSize < dataLength) {
             int remainingData = dataLength - (fragment * mtuSize);
             int bytesToSend = remainingData < mtuSize ? remainingData : mtuSize;
             int packetSize = headerLength + bytesToSend;
             JPacket packet = new JMemoryPacket(packetSize);
-
+            //System.out.println("Offset " + offset + "| mtu: " + mtuSize + "| fragment: " + fragment);
             packet.scan(JProtocol.ETHERNET_ID);
             packet.order(ByteOrder.BIG_ENDIAN);
             packet.setUShort(12, 0x0800);
@@ -153,9 +153,11 @@ public class RawUdpPacketSender {
             Ethernet ethernet = packet.getHeader(new Ethernet());
             ethernet.source(sourceMacAddress);
             ethernet.destination(destinationMacAddress);
-            ethernet.checksum(ethernet.calculateChecksum());
+           // ethernet.checksum(ethernet.calculateChecksum());
             packet.scan(JProtocol.ETHERNET_ID);
-            Ip4 ip4 = packet.getHeader(new Ip4());
+	    //System.out.println(packet.toString());
+            //ethernet.checksum(ethernet.calculateChecksum());
+	    Ip4 ip4 = packet.getHeader(new Ip4());
             ip4.type(Ip4.Ip4Type.UDP);
             byte[] sourceAddress = spoofedSourceAddress;
             ip4.source(sourceAddress);
